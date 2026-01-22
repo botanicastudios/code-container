@@ -47,8 +47,9 @@ RUN apt-get update \
 # Create python symlink pointing to python3
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
-# Install Claude Code globally via npm
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude Code globally via official installer
+RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 # Set working directory to root home
 WORKDIR /root
