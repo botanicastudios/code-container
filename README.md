@@ -54,7 +54,7 @@ Or specify the path explicitly:
 To use `container` from anywhere without the `./` prefix, create a symbolic link:
 
 ```bash
-sudo ln -s "$(pwd)/container.sh" /usr/local/bin/container
+ln -s "$(pwd)/container.sh" /usr/local/bin/container
 ```
 
 Then you can run from any directory:
