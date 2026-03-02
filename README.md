@@ -9,23 +9,38 @@ Isolated Docker environment for running coding tools on projects with full syste
 - **Shared Resources**: npm cache, pip cache, and Claude history shared across projects
 - **Security**: Changes within a container don't affect your host or other projects
 
+## Prerequisites
+
+- **Docker** — [Install Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine
+- **A POSIX-Compatible System** — Linux, MacOS, WSL
+
 ## Installation Details
 
 - **Base**: Ubuntu 24.04 LTS with build essentials
 - **Runtimes**: Node.js 22 LTS (via NVM), Python 3 with pip
-- **Tools**: Claude Code, Opencode, OpenAI Codex CLI, git, curl, wget
+- **Tools**: Claude Code, OpenCode, OpenAI Codex CLI, git, curl, wget
 - **Mounts**: `~/.gitconfig`, `~/.ssh` (read-only from host)
 - **Shared**: Claude history, npm cache, pip cache
 
 ## Initial Setup
 
-### 1. Configure Claude, Opencode, and Codex
+### 1. Configure Claude, OpenCode, and Codex
+
+Copy your configuration directories into this repo so they are shared across containers:
 
 ```bash
+# Claude Code
+cp -R ~/.claude ./.claude
 cp ~/.claude.json container.claude.json
-cp ~/.config/opencode/config.json container.opencode.json
-cp ~/.codex/config.json container.codex.json    # Or your Codex CLI config path
+
+# OpenAI Codex
+cp -R ~/.codex ./.codex
+
+# OpenCode
+cp -R ~/.config/opencode ./.opencode
 ```
+
+These directories and the Claude JSON file will be shared with each code container. Modifications to these config files will persist across sessions and containers.
 
 ### 2. Build Docker Image
 
@@ -50,9 +65,9 @@ Or specify the path explicitly:
 ./container.sh /path/to/your/project
 ```
 
-### 4. (Optional) Install as Global Command
+### 4. Install as Global Command
 
-To use `container` from anywhere without the `./` prefix, create a symbolic link:
+To use `container` from anywhere, create a symbolic link in a PATH-tracked folder:
 
 ```bash
 ln -s "$(pwd)/container.sh" /usr/local/bin/container
@@ -120,12 +135,12 @@ container --remove /path/to/project
 **Read from Host (Not Persisted):**
 - Git configuration, SSH keys
 
-## Simultaneous Work (You + Claude Code)
+## Simultaneous Work
 
-Both you and Claude Code can work on the project simultaneously:
+Both you and your harness can work on the project simultaneously:
 
 **Safe:**
-- File editing (bind mount supports concurrent access)
+- File editing
 - Reading files
 - Most development operations
 
@@ -135,9 +150,9 @@ Both you and Claude Code can work on the project simultaneously:
 - File editor locks (rare)
 
 **Recommended Workflow:**
-1. Let Claude Code work autonomously in the container
-2. Review changes from host after completion
-3. Or: Do git operations from host only
+1. Let your harness work autonomously in the container
+2. Work on the project independently on your system
+3. Review changes from harness and commit
 
 ## Container Naming
 
