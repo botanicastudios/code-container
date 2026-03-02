@@ -75,7 +75,7 @@ generate_container_name() {
     # Get the project folder name
     local project_name=$(basename "$project_path")
     # Create a hash of the full path for uniqueness
-    local path_hash=$(echo -n "$project_path" | md5sum | cut -c1-8)
+    local path_hash=$(echo -n "$project_path" | shasum | cut -c1-8)
     echo "code-${project_name}-${path_hash}"
 }
 
@@ -125,6 +125,11 @@ start_container() {
     mkdir -p "$SCRIPT_DIR/pip"
     mkdir -p "$SCRIPT_DIR/.local"
     mkdir -p "$SCRIPT_DIR/.opencode"
+
+    if [ ! -f "$SCRIPT_DIR/container.claude.json" ]; then
+        print_warning "Missing $SCRIPT_DIR/container.claude.json; creating default file"
+        echo '{}' > "$SCRIPT_DIR/container.claude.json"
+    fi
     
     # Check if image exists, build if not
     if ! image_exists; then
