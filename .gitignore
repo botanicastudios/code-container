@@ -4,8 +4,6 @@
 .npm/*
 pip/*
 .local/*
-container.claude.json
-container.opencode.json
 
 !.claude/.gitkeep
 !.codex/.gitkeep
