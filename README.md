@@ -12,94 +12,99 @@ Isolated Docker environment for running coding tools on projects with full syste
 ## Prerequisites
 
 - **Docker** — [Install Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine
-- **A POSIX-Compatible System** — Linux, MacOS, WSL
-
-## Installation Details
-
-- **Base**: Ubuntu 24.04 LTS with build essentials
-- **Runtimes**: Node.js 22 LTS (via NVM), Python 3 with pip
-- **Tools**: Claude Code, OpenCode, OpenAI Codex CLI, git, curl, wget
-- **Mounts**: `~/.gitconfig`, `~/.ssh` (read-only from host)
-- **Shared**: Claude history, npm cache, pip cache
+- **A POSIX-Compatible System** — Linux, macOS, WSL
 
 ## Initial Setup
 
 ### 1. Install as Global Command
 
-To use `container` from anywhere, create a symbolic link in a PATH-tracked folder:
+To use the `container` command from anywhere, create a symlink in a PATH-tracked folder:
 
 ```bash
 ln -s "$(pwd)/container.sh" /usr/local/bin/container
-# Replace /usr/local/bin with any PATH tracked folder
 ```
 
-Then you can run the `container` command from any directory:
+### 2. Configure Harnesses
+
+Copy configurations into this repo (shared across all containers):
 
 ```bash
-cd /path/to/your/project
-container          # Uses current directory
-container --list
-```
-
-### 2. Configure Claude, OpenCode, and Codex
-
-Copy your configuration directories into this repo. These configuration directories are shared across containers:
-
-```bash
-# Claude Code
-cp -R ~/.claude ./.claude
-cp ~/.claude.json container.claude.json
-
-# OpenAI Codex
-cp -R ~/.codex ./.codex
-
 # OpenCode
 cp -R ~/.config/opencode ./.opencode
+
+# Codex
+cp -R ~/.codex ./.codex
+
+# Claude Code
+cp -R ~/.claude ./.claude && cp ~/.claude.json container.claude.json
 ```
 
 ### 3. Build Docker Image
 
-Build the Docker container by running `container` with the `--build` flag:
-
 ```bash
-container --build
+container --build    # Run once, or when rebuilding
 ```
 
-You only need to do this once or whenever you wish to rebuild the Docker image.
+**Includes**: Ubuntu 24.04 LTS, Node.js 22 LTS, Python 3, Claude Code, OpenCode, OpenAI Codex CLI, git
 
 ## Usage
 
-After building, you can start working safely with containers.
-
-**Start a project:** To enter the container, navigate to the project directory and run `container`.
 ```bash
 cd /path/to/your/project
-container
+container                    # Enter container
 ```
 
-**Inside the container:** Once inside the container environment, you can now let your harness run loose!
+Inside the container:
 ```bash
-opencode
-codex
-npm install package-name
-pip install package-name
-exit
+opencode                     # Start OpenCode
+codex                        # Start OpenAI Codex
+npm install <package>        # Persists per container
+pip install <package>        # Persists per container
+exit                         # Auto-stops container on exit
 ```
 
-All container state is saved. Next time you run the script from the same project directory, you'll resume in the same container where you left off.
+Container state is saved. Next invocation resumes where you left off. AI conversations and settings persist across all projects.
 
-Conversations and settings for your harness will be shared across all containers.
+### Container Isolation
+
+Destructive actions are localized inside containers. You can let your harness run with full permissions.
+
+`.opencode/opencode.json`
+```json
+{
+  "permission": "allow"
+}
+```
+
+`.codex/config.toml`
+```toml
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+```
+
+`.claude/settings.json`
+```json
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash"
+    ]
+  }
+}
+```
+
 
 ## Common Commands
 
 ```bash
 container                  # Enter the container
 container --list           # List all containers
-container --stop           # Stop the current project's container
-container --remove         # Remove the current project's container
+container --stop           # Stop current project's container
+container --remove         # Remove current project's container
 container --build          # Rebuild Docker image
 
-# Or with explicit path:
+# With explicit path:
 container /path/to/project
 container --stop /path/to/project
 container --remove /path/to/project
@@ -107,76 +112,52 @@ container --remove /path/to/project
 
 ## What Persists
 
-**Per-Project Container:**
+**Per-Container**:
 - All installed system packages, npm packages, Python packages
 - All file modifications, databases, shell history
 - Container filesystem state
 
 **Shared Across All Projects:**
-- Claude configuration and conversation history
-- OpenAI Codex configuration/history
+- Harness configuration and conversation history
 - npm and pip download caches
 - Python user packages
 
-**Read from Host (Not Persisted):**
+**Read-only from Host:**
 - Git configuration, SSH keys
 
 ## Simultaneous Work
 
-Both you and your harness can work on the project simultaneously:
+You and your harness can work on the same project simultaneously.
 
-**Safe:**
-- File editing
-- Reading files
-- Most development operations
+**Safe**: File editing, reading files, most development operations
 
-**Potential Issues:**
-- Git operations from both sides simultaneously
-- Installing different versions of `node_modules` from container vs host
-- File editor locks (rare)
+**Avoid**: Git operations from both sides, installing conflicting `node_modules`
 
-**Recommended Workflow:**
-1. Let your harness work autonomously in the container
-2. Work on the project independently on your system
-3. Review changes from harness and commit
-
-## Container Naming
-
-Containers are named based on project path: `code-{project-name}-{path-hash}`
-
-Example: `/Users/clippy/my-app` → `code-my-app-a1b2c3d4`
-
-Different containers for projects with the same name in different directories.
+**Recommended**: Let AI work autonomously in container while you work; review afterwards and commit.
 
 ## Customization
 
-**Add Tools:**
-
-Edit `Dockerfile` and rebuild:
+**Add tools/packages** — Edit `Dockerfile` and rebuild:
 ```dockerfile
 RUN apt-get update && apt-get install -y postgresql-client redis-tools && rm -rf /var/lib/apt/lists/*
 ```
 
-**Add Shared Volumes:**
-
-Edit the `docker run -it` command inside `container.sh` to add more shared volumes:
+**Add shared volumes** — Edit `docker run -it` in `container.sh`:
 ```bash
-docker run -it \
-... \
--v "$SCRIPT_DIR/new-shared-dir:/root/target-path" \
+-v "$SCRIPT_DIR/new-shared-dir:/root/target-path"
 ```
 
 ## Security
 
-- Container runs as root
-- No network restrictions
-- SSH keys mounted read-only
-- Project isolation: changes don't affect other containers or host
-- Host protection: container can't access host filesystem outside mounted directories
+- Container runs as root with no network restrictions
+- SSH keys and Git config mounted read-only
+- Project isolation prevents cross-contamination
+- Host filesystem protected (no access outside mounted directories)
 
 ## Tips
 
-- Use `container --list` regularly to track containers
-- Remove containers for completed projects to save disk space
-- Back up `./.claude/` to preserve conversation history
-- Use `docker system prune -a` to clean up unused Docker data
+```bash
+container --list          # Track containers
+container --remove        # Save disk space after project completion
+docker system prune -a    # Clean up unused Docker data
+```
