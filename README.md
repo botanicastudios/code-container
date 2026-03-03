@@ -34,11 +34,11 @@ Copy configurations into this repo (shared across all containers):
 Or, if copying manually:
 ```bash
 # OpenCode
-cp -R ~/.config/opencode ./.opencode
+cp -R ~/.config/opencode/ ./.opencode/
 # Codex
-cp -R ~/.codex ./.codex
+cp -R ~/.codex/ ./.codex/
 # Claude Code
-cp -R ~/.claude ./.claude && cp ~/.claude.json container.claude.json
+cp -R ~/.claude/ ./.claude/ && cp ~/.claude.json container.claude.json
 ```
 
 ### 3. Build Docker Image
