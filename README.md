@@ -24,7 +24,7 @@
   ln -s "$(pwd)/container.sh" /usr/local/bin/container
   ```
 
-1. **Copy Configurations**: Copy harness configs into this repo:
+2. **Copy Configurations**: Copy harness configs into this repo:
   ```bash
   ./copy-configs.sh
   ```
@@ -35,7 +35,7 @@
   cp -R ~/.claude/ ./.claude/ && cp ~/.claude.json container.claude.json  # Claude Code
   ```
 
-1. Build Docker Image
+3. Build Docker Image
   ```bash
   container --build    # Run once, or when rebuilding
   ```
