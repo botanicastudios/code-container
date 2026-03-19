@@ -46,7 +46,7 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install Claude Code globally via official installer
 RUN curl -fsSL https://claude.ai/install.sh | bash
-RUN echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Install Opencode
 RUN npm install -g opencode-ai
