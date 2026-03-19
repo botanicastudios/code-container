@@ -18,6 +18,7 @@ import {
   removeContainer,
   createNewContainer,
   execInteractive,
+  execNonInteractive,
   stopContainerIfLastSession,
   listContainersRaw,
   getStoppedContainerIds,
@@ -32,6 +33,54 @@ import {
   copyConfigs,
 } from "./config";
 import { ensureMountsFile } from "./mounts";
+
+type ContainerState = "running" | "started" | "created";
+
+function ensureProjectDirectory(projectPath: string): void {
+  if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
+    printError(
+      `Project directory does not exist or is not a directory: ${projectPath}`
+    );
+    process.exit(1);
+  }
+}
+
+function ensureProjectContainer(projectPath: string): {
+  containerName: string;
+  projectName: string;
+  state: ContainerState;
+} {
+  const containerName = generateContainerName(projectPath);
+  const projectName = path.basename(projectPath);
+
+  ensureProjectDirectory(projectPath);
+  ensureConfigDir();
+
+  if (!imageExists()) {
+    printWarning("Docker image not found. Building...");
+    buildImage();
+  }
+
+  if (containerRunning(containerName)) {
+    return { containerName, projectName, state: "running" };
+  }
+
+  if (containerExists(containerName)) {
+    printInfo(`Starting existing container: ${containerName}`);
+    startContainer(containerName);
+    return { containerName, projectName, state: "started" };
+  }
+
+  printInfo(`Creating new container: ${containerName}`);
+  printInfo(`Project: ${projectPath}`);
+
+  if (!createNewContainer(containerName, projectName, projectPath)) {
+    printError("Failed to create container");
+    process.exit(1);
+  }
+
+  return { containerName, projectName, state: "created" };
+}
 
 export function buildImage(): void {
   printInfo(`Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}`);
@@ -90,24 +139,11 @@ export async function init(isStartup: boolean = false): Promise<void> {
 
 export async function runContainer(projectPath: string): Promise<void> {
   await ensureMountsFile();
-  const containerName = generateContainerName(projectPath);
-  const projectName = path.basename(projectPath);
+  const { containerName, projectName, state } = ensureProjectContainer(
+    projectPath
+  );
 
-  if (!fs.existsSync(projectPath) || !fs.statSync(projectPath).isDirectory()) {
-    printError(
-      `Project directory does not exist or is not a directory: ${projectPath}`
-    );
-    process.exit(1);
-  }
-
-  ensureConfigDir();
-
-  if (!imageExists()) {
-    printWarning("Docker image not found. Building...");
-    buildImage();
-  }
-
-  if (containerRunning(containerName)) {
+  if (state === "running") {
     printInfo(`Container '${containerName}' is already running`);
     printInfo("Attaching to container...");
     execInteractive(containerName, projectName);
@@ -115,25 +151,27 @@ export async function runContainer(projectPath: string): Promise<void> {
     return;
   }
 
-  if (containerExists(containerName)) {
-    printInfo(`Starting existing container: ${containerName}`);
-    startContainer(containerName);
-    execInteractive(containerName, projectName);
-    stopContainerIfLastSession(containerName, projectName);
-    return;
-  }
-
-  printInfo(`Creating new container: ${containerName}`);
-  printInfo(`Project: ${projectPath}`);
-
-  if (!createNewContainer(containerName, projectName, projectPath)) {
-    printError("Failed to create container");
-    process.exit(1);
-  }
-
   execInteractive(containerName, projectName);
   stopContainerIfLastSession(containerName, projectName);
   printSuccess("Container session ended");
+}
+
+export async function execInContainer(
+  projectPath: string,
+  command: string[]
+): Promise<number> {
+  await ensureMountsFile();
+  const { containerName, projectName, state } = ensureProjectContainer(
+    projectPath
+  );
+
+  const exitCode = execNonInteractive(containerName, projectName, command);
+
+  if (state !== "running") {
+    stopContainerIfLastSession(containerName, projectName);
+  }
+
+  return exitCode;
 }
 
 export function stopContainerForProject(projectPath: string): void {

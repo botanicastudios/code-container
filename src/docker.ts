@@ -143,6 +143,28 @@ export function execInteractive(
   );
 }
 
+export function execNonInteractive(
+  containerName: string,
+  projectName: string,
+  command: string[]
+): number {
+  const result = spawnSync(
+    "docker",
+    [
+      "exec",
+      "-e",
+      "TERM=xterm-256color",
+      "-w",
+      `/root/${projectName}`,
+      containerName,
+      ...command,
+    ],
+    { stdio: "inherit" }
+  );
+
+  return result.status ?? 1;
+}
+
 export function getOtherSessionCount(
   containerName: string,
   projectName: string

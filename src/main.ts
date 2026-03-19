@@ -4,6 +4,7 @@ import { printError, printInfo, promptYesNo, resolveProjectPath } from "./utils"
 import {
   buildImage,
   runContainer,
+  execInContainer,
   stopContainerForProject,
   removeContainerForProject,
   listContainers,
@@ -57,12 +58,15 @@ async function ensureTosAccepted(): Promise<boolean> {
 function usage(): void {
   console.log(`
 Usage: container [COMMAND] [PROJECT_PATH]
+       container exec [--] COMMAND [ARG...]
+       container exec PROJECT_PATH -- COMMAND [ARG...]
 
 Manage Code containers for isolated project environments.
 
 Commands:
     (none)         Start container for current directory (default)
     run            Start container for specified project path
+    exec           Run a single command in the container
     build          Build the Docker image
     init           Copy config files from home directory
     stop           Stop the container for this project
@@ -76,6 +80,8 @@ Arguments:
 Examples:
     container                           # Start container for current directory
     container run /path/to/project      # Start container for specific project
+    container exec -- npm test          # Run command in current project's container
+    container exec /path/to/project -- npm test
     container build                     # Build Docker image
     container init                      # Copy config files
     container stop                      # Stop container for current directory
@@ -86,10 +92,42 @@ Examples:
   process.exit(0);
 }
 
+function parseExecArgs(args: string[]): {
+  projectPath: string;
+  execArgs: string[];
+} {
+  const separatorIndex = args.indexOf("--");
+
+  if (separatorIndex === -1) {
+    if (args.length === 0) {
+      printError("Missing command for exec");
+      usage();
+    }
+
+    return { projectPath: "", execArgs: args };
+  }
+
+  if (separatorIndex > 1) {
+    printError("Too many arguments before '--'");
+    usage();
+  }
+
+  const projectPath = separatorIndex === 1 ? args[0] : "";
+  const execArgs = args.slice(separatorIndex + 1);
+
+  if (execArgs.length === 0) {
+    printError("Missing command for exec");
+    usage();
+  }
+
+  return { projectPath, execArgs };
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   let command = "";
   let projectPath = "";
+  let execArgs: string[] = [];
 
   if (args.length > 0) {
     const firstArg = args[0];
@@ -99,6 +137,7 @@ async function main(): Promise<void> {
 
     const validCommands = [
       "run",
+      "exec",
       "build",
       "init",
       "stop",
@@ -108,10 +147,18 @@ async function main(): Promise<void> {
     ];
     if (validCommands.includes(firstArg)) {
       command = firstArg;
-      if (args.length > 1) {
+      if (command === "exec") {
+        const parsed = parseExecArgs(args.slice(1));
+        projectPath = parsed.projectPath;
+        execArgs = parsed.execArgs;
+      } else if (args.length > 1) {
         projectPath = args[1];
+        if (args.length > 2) {
+          printError(`Unexpected argument: ${args[2]}`);
+          usage();
+        }
       }
-      if (args.length > 2) {
+      if (command !== "exec" && args.length > 2) {
         printError(`Unexpected argument: ${args[2]}`);
         usage();
       }
@@ -150,6 +197,9 @@ async function main(): Promise<void> {
       return;
     case "remove":
       removeContainerForProject(resolvedPath);
+      return;
+    case "exec":
+      process.exit(await execInContainer(resolvedPath, execArgs));
       return;
     case "run":
     case "":
