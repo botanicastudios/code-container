@@ -12,7 +12,6 @@ export const MOUNTS_PATH = path.join(APPDATA_DIR, "MOUNTS.txt");
 export const SHARED_DIRS = [
   ".claude",
   ".codex",
-  ".local",
   ".opencode",
   ".gemini",
 ];

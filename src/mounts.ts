@@ -1,7 +1,11 @@
 import * as fs from "fs";
 import * as os from "os";
 import { CONFIGS_DIR, MOUNTS_PATH, ensureAppdataDir } from "./config";
-import { printInfo, promptYesNo } from "./utils";
+import { printInfo, printWarning, promptYesNo } from "./utils";
+
+const OBSOLETE_CORE_MOUNTS = new Set([
+  `${CONFIGS_DIR}/.local:/root/.local`,
+]);
 
 function getCoreMounts(): string[] {
   const home = os.homedir();
@@ -11,7 +15,6 @@ function getCoreMounts(): string[] {
     `${CONFIGS_DIR}/.codex:/root/.codex`,
     `${CONFIGS_DIR}/.opencode:/root/.config/opencode`,
     `${CONFIGS_DIR}/.gemini:/root/.gemini`,
-    `${CONFIGS_DIR}/.local:/root/.local`,
     `${home}/.gitconfig:/root/.gitconfig:ro`,
   ];
 }
@@ -55,8 +58,17 @@ export function loadMounts(): string[] {
     return [];
   }
   const content = fs.readFileSync(MOUNTS_PATH, "utf-8");
-  return content
+  const mounts = content
     .split("\n")
     .map(line => line.trim())
     .filter(line => line && !line.startsWith("#"));
+
+  const filteredMounts = mounts.filter(mount => !OBSOLETE_CORE_MOUNTS.has(mount));
+  if (filteredMounts.length !== mounts.length) {
+    printWarning(
+      "Ignoring legacy ~/.code-container/configs/.local mount because it hides image-installed CLI tools."
+    );
+  }
+
+  return filteredMounts;
 }

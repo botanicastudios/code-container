@@ -58,7 +58,6 @@ All container data is stored in `~/.code-container/`:
 │   ├── .claude.json
 │   ├── .codex/
 │   ├── .gemini/
-│   ├── .local/
 │   └── .opencode/
 ├── Dockerfile        # Custom Dockerfile
 ├── MOUNTS.txt        # Additional mount points
