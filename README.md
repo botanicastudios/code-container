@@ -17,7 +17,7 @@
 
 1. `container` is available as a NPM package. To install, simply run:
     ```bash
-    npm install -g code-container
+    npm install -g @botanicastudios/code-container
     ```
 
 2. Then run the following to copy all your AI harness configs from `~/` to `~/.code-container/configs` for mounting onto the container.
@@ -44,7 +44,7 @@ You're done 🎉; `container` is now ready to use.
 > Are you still on the shell script version of `container`? Migrate to the NPM package by running the following:
 > ```bash
 > # Exit all containers & save important work...
-> npm install -g code-container
+> npm install -g @botanicastudios/code-container
 > bash scripts/migrate.sh     # Migrate configs over to ~/.code-container/configs
 > bash scripts/cleanup.sh     # Optional: Cleanup config files
 > container build
