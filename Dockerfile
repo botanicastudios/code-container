@@ -27,12 +27,14 @@ RUN apt-get update && apt-get install -y \
 # Install NVM (Node Version Manager) and Node.js
 ENV NVM_DIR=/root/.nvm
 ENV NODE_VERSION=22
+SHELL ["/bin/bash", "-lc"]
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
-    && . "$NVM_DIR/nvm.sh" \
+    && source "$NVM_DIR/nvm.sh" \
     && nvm install ${NODE_VERSION} \
-    && nvm use ${NODE_VERSION} \
     && nvm alias default ${NODE_VERSION} \
-    && ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/"* /usr/local/bin/
+    && npm install -g opencode-ai @openai/codex @google/gemini-cli \
+    && NODE_BIN="$(dirname "$(nvm which default)")" \
+    && ln -sf "$NODE_BIN/"* /usr/local/bin/
 
 RUN apt-get update \
     && apt-get install -y \
@@ -47,15 +49,6 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python
 # Install Claude Code globally via official installer
 RUN curl -fsSL https://claude.ai/install.sh | bash
 ENV PATH="/root/.local/bin:${PATH}"
-
-# Install Opencode
-RUN npm install -g opencode-ai
-
-# Install OpenAI Codex CLI
-RUN npm install -g @openai/codex
-
-# Install Gemini CLI
-RUN npm install -g @google/gemini-cli
 
 # Set working directory to root home
 WORKDIR /root
