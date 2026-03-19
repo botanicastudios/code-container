@@ -14,10 +14,11 @@
   "scripts": {
     "build": "tsc && chmod u+x dist/main.js",
     "clean": "rm -rf dist",
+    "prepack": "npm run clean && npm run build",
     "start": "node dist/main.js",
     "postinstall": "node scripts/postinstall.js",
-    "publish-latest": "npm run clean && npm run build && npm publish",
-    "publish-nightly": "npm run clean && npm run build && npm publish --tag nightly"
+    "publish-latest": "npm publish",
+    "publish-nightly": "npm publish --tag nightly"
   },
   "keywords": [
     "docker",
