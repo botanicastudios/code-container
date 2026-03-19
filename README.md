@@ -57,6 +57,7 @@ Navigate to any project and run `container` to mount project and enter container
 ```bash
 cd /path/to/your/project
 container                    # Enter container
+container exec -- npm test   # Run one command without attaching
 ```
 
 Inside the container: Start your harness and develop like normal.
@@ -72,6 +73,8 @@ Container state is saved. Next invocation resumes where you left off. AI convers
 
 ```bash
 container                  # Enter the container
+container exec -- npm test # Run one command in current project's container
+container exec /path/to/project -- npm test
 container run /path/to     # Enter container for specific project
 container list             # List all containers
 container stop             # Stop current project's container
